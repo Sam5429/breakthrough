@@ -1,32 +1,47 @@
 import java.util.ArrayList;
 import java.util.List;
 
-class Board {
+class Board implements Cloneable {
 
-	private Owner _board[][] = new Owner[8][8];
+	private Mark _board[][] = new Mark[8][8];
 
 	public Board() {
 		for (int i = 0; i < _board.length; i++) {
 			for (int j = 0; j < _board[i].length; j++) {
 				if (i < 2) {
-					_board[i][j] = Owner.O;
+					_board[i][j] = Mark.B;
 				} else if (i > 5) {
-					_board[i][j] = Owner.X;
+					_board[i][j] = Mark.R;
 				} else {
-					_board[i][j] = Owner.EMPTY;
+					_board[i][j] = Mark.EMPTY;
 				}
 			}
 		}
 	}
 
-	public List<List<Move>> getMoves(Owner o) {
-		ArrayList<List<Move>> moves = new ArrayList<>();
+	@Override
+	public Board clone() {
+		Board cloned;
+		try {
+			cloned = (Board) super.clone();
+		} catch (CloneNotSupportedException ex) {
+			throw new RuntimeException("superclass messed up", ex);
+		}
+		cloned._board = new Mark[_board.length][];
+		for (int i = 0; i < _board.length; i++) {
+			cloned._board[i] = _board[i].clone();
+		}
+		return cloned;
+	}
+
+	public List<Move> getMoves(Mark o) {
+		ArrayList<Move> moves = new ArrayList<>();
 		for (int i = 0; i < _board.length; i++) {
 			for (int j = 0; j < _board[i].length; j++) {
 				if (_board[i][j] == o) {
 					List<Move> currentMoves = getMoves(new Position(j, i));
-					if (!currentMoves.isEmpty()) {
-						moves.add(currentMoves);
+					for (Move move : currentMoves) {
+						moves.add(move);
 					}
 				}
 			}
@@ -35,9 +50,9 @@ class Board {
 	}
 
 	public List<Move> getMoves(Position p) {
-		Owner o = _board[p.y()][p.x()];
+		Mark o = _board[p.y()][p.x()];
 		int[][] moves;
-		if (o == Owner.O) {
+		if (o == Mark.B) {
 			moves = new int[][] { { -1, 1 }, { 0, 1 }, { 1, 1 } };
 		} else {
 			moves = new int[][] { { -1, -1 }, { 0, -1 }, { 1, -1 } };
@@ -49,12 +64,12 @@ class Board {
 
 			// vérifie si pas outofbound
 			if (
-				(next_x >= 0 && next_x < _board[next_y].length) &&
-				(next_y >= 0 && next_y < _board.length)
+				(next_y >= 0 && next_y < _board.length) &&
+				(next_x >= 0 && next_x < _board[next_y].length)
 			) {
-				Owner nextOwner = _board[next_y][next_x];
+				Mark nextOwner = _board[next_y][next_x];
 				// déplacement sur case vide
-				if (nextOwner == Owner.EMPTY) {
+				if (nextOwner == Mark.EMPTY) {
 					nextMoves.add(new Move(p, new Position(next_x, next_y)));
 				}
 				// déplacement sur case énemie
@@ -84,8 +99,8 @@ class Board {
 			return false;
 		}
 
-		Owner oInit = _board[m.init().y()][m.init().x()];
-		Owner oTarg = _board[m.target().y()][m.target().x()];
+		Mark oInit = _board[m.init().y()][m.init().x()];
+		Mark oTarg = _board[m.target().y()][m.target().x()];
 
 		if (distanceEuclidienne(m.init(), m.target()) >= 2) {
 			System.err.println(m.toString());
@@ -93,12 +108,12 @@ class Board {
 			return false;
 		}
 
-		if (oInit == Owner.EMPTY) {
+		if (oInit == Mark.EMPTY) {
 			System.err.println(m.toString());
 			System.err.println("la position initial du move est vide");
 			return false;
 		} else {
-			if (oTarg != Owner.EMPTY) {
+			if (oTarg != Mark.EMPTY) {
 				if (oTarg != oInit) {
 					if (m.init().x() == m.target().x()) {
 						System.err.println(m.toString());
@@ -117,11 +132,11 @@ class Board {
 			}
 		}
 
-		if (oInit == Owner.X) {
+		if (oInit == Mark.R) {
 			if (m.target().y() >= m.init().y()) {
 				System.err.println(m.toString());
 				System.err.println(
-					"la position y du move pour X n'a pas changer dans le bon sens"
+					"la position y du move pour R n'a pas changer dans le bon sens"
 				);
 				return false;
 			}
@@ -129,7 +144,7 @@ class Board {
 			if (m.target().y() <= m.init().y()) {
 				System.err.println(m.toString());
 				System.err.println(
-					"la position y du move pour O n'a pas changer dans le bon sens"
+					"la position y du move pour B n'a pas changer dans le bon sens"
 				);
 				return false;
 			}
@@ -139,33 +154,66 @@ class Board {
 
 	public void move(Move m) {
 		if (moveIsValid(m)) {
-			Owner oInit = _board[m.init().y()][m.init().x()];
+			Mark oInit = _board[m.init().y()][m.init().x()];
 			_board[m.target().y()][m.target().x()] = oInit;
-			_board[m.init().y()][m.init().x()] = Owner.EMPTY;
+			_board[m.init().y()][m.init().x()] = Mark.EMPTY;
 		}
 	}
 
-	public Owner hasWinner() {
-		for (Owner tile : _board[0]) {
-			if (tile == Owner.X) {
-				return Owner.X;
+	public Mark hasWinner() {
+		for (Mark tile : _board[0]) {
+			if (tile == Mark.R) {
+				return Mark.R;
 			}
 		}
-		for (Owner tile : _board[7]) {
-			if (tile == Owner.O) {
-				return Owner.O;
+		for (Mark tile : _board[7]) {
+			if (tile == Mark.B) {
+				return Mark.B;
 			}
 		}
 		return null;
 	}
 
+	public int evaluate(Mark m) {
+		int numPlayer = 0;
+		int numEnnemi = 0;
+		int mostAdvenceMark;
+		if (m == Mark.B) {
+			mostAdvenceMark = 0;
+		} else {
+			mostAdvenceMark = 7;
+		}
+		for (int i = 0; i < _board.length; i++) {
+			for (int j = 0; j < _board[i].length; j++) {
+				if (_board[i][j] == m) {
+					if (m == Mark.B) {
+						if (i > mostAdvenceMark) {
+							mostAdvenceMark = i;
+						}
+					} else {
+						if (i < mostAdvenceMark) {
+							mostAdvenceMark = i;
+						}
+					}
+					numPlayer++;
+				} else if (_board[i][j] != Mark.EMPTY) {
+					numEnnemi++;
+				}
+			}
+		}
+		if (m == Mark.R) {
+			mostAdvenceMark = 7 - mostAdvenceMark;
+		}
+		return (numPlayer - numEnnemi) + mostAdvenceMark;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		for (Owner[] line : _board) {
-			for (Owner tile : line) {
+		for (Mark[] line : _board) {
+			for (Mark tile : line) {
 				sb.append(
-					tile == Owner.EMPTY ? "." : tile == Owner.X ? "X" : "O"
+					tile == Mark.EMPTY ? "." : tile == Mark.R ? "R" : "B"
 				);
 				sb.append("|");
 			}

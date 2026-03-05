@@ -6,27 +6,26 @@ class Main {
 	public static void main(String[] args) {
 		Board b = new Board();
 		System.out.println(b.toString());
-		int x = 0;
-		int y = 0;
-		Owner oTurn = Owner.O;
-		Random r = new Random(1);
+		Mark oTurn = Mark.B;
+		Random r = new Random();
+		Bot bot = new Bot(Mark.B);
 		while (b.hasWinner() == null) {
-			List<List<Move>> moves = b.getMoves(oTurn);
-			int i = r.nextInt(0, moves.size());
-			int j = r.nextInt(0, moves.get(i).size());
-			Move move = moves.get(i).get(j);
+			Move move;
+			if (oTurn == Mark.B) {
+				List<Move> moves = bot.getNextMoveAB(b);
+				move = moves.get(0);
+			} else {
+				List<Move> moves = b.getMoves(oTurn);
+				int i = r.nextInt(0, moves.size());
+				move = moves.get(i);
+			}
+			System.out.println(
+				(oTurn == Mark.B ? "B" : "R") + " " + move.toString()
+			);
 			b.move(move);
 			System.out.println(b.toString());
-			oTurn = oTurn == Owner.O ? Owner.X : Owner.O;
+			oTurn = oTurn == Mark.B ? Mark.R : Mark.B;
 		}
-		System.out.println(
-			"Winner : " + (b.hasWinner() == Owner.O ? "O" : "X")
-		);
-
-		// List<Move> moves = b.getMoves(new Position(0, 1));
-		// System.out.println(moves.size());
-		// for (Move move : moves) {
-		// 	System.out.println(move.toString());
-		// }
+		System.out.println("Winner : " + (b.hasWinner() == Mark.B ? "B" : "R"));
 	}
 }
