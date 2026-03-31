@@ -1,4 +1,5 @@
 public class Move {
+
 	public final Position init;
 	public final Position target;
 
@@ -15,10 +16,6 @@ public class Move {
 
 	@Override
 	public String toString() {
-		return (
-			init.toString() +
-			" - " +
-			target.toString()
-		);
+		return (init.toString() + " - " + target.toString());
 	}
 }
