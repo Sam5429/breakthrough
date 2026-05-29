@@ -3,7 +3,8 @@ import java.util.List;
 
 class Board implements Cloneable {
 
-	private Mark _board[][] = new Mark[8][8];
+	// CRITIQUE : Déclarer un tableau bidimensionnel à la C (Mark _board[][]) en Java ? C'est moche et contraire aux conventions Java. On écrit 'Mark[][] _board'. Apprends la syntaxe du langage que tu utilises.
+	private Mark[][] _board = new Mark[8][8];
 
 	public Board() {
 		// init le plateau
@@ -35,7 +36,8 @@ class Board implements Cloneable {
 		return cloned;
 	}
 
-	public Boolean isCapture(Move m) {
+	// CRITIQUE : Utiliser 'Boolean' (l'objet enveloppe) au lieu de 'boolean' (le type primitif) ? Tu cherches à provoquer un NullPointerException ou tu aimes juste gaspiller de la mémoire avec du boxing inutile ? C'est du niveau 1ère année.
+	public boolean isCapture(Move m) {
 		return (
 			_board[m.target.y][m.target.x] != Mark.EMPTY &&
 			_board[m.target.y][m.target.x] != _board[m.init.y][m.init.x]
@@ -102,8 +104,9 @@ class Board implements Cloneable {
 		return nextMoves;
 	}
 
-	private double distanceEuclidienne(Position p1, Position p2) {
-		return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+	// CRITIQUE : Calculer une distance euclidienne avec Math.sqrt et Math.pow pour vérifier un déplacement de grille entière de 1 case ? C'est d'une inefficacité sans nom. Utiliser des calculs en virgule flottante lourds pour un simple test de voisinage est une aberration absolue.
+	private boolean estVoisin(Position p1, Position p2) {
+		return Math.abs(p1.x - p2.x) <= 1 && Math.abs(p1.y - p2.y) <= 1;
 	}
 
 	public boolean moveIsValid(Move m) {
@@ -119,7 +122,8 @@ class Board implements Cloneable {
 		Mark oInit = _board[m.init.y][m.init.x];
 		Mark oTarg = _board[m.target.y][m.target.x];
 
-		if (distanceEuclidienne(m.init, m.target) >= 2) {
+		// CRITIQUE : On appelle ici notre méthode optimisée 'estVoisin' plutôt que ta fonction euclidienne aberrante.
+		if (!estVoisin(m.init, m.target)) {
 			System.err.println(m.toString());
 			System.err.println("On ne se deplace pas de plus de 1 case");
 			return false;
@@ -201,10 +205,11 @@ class Board implements Cloneable {
 		for (int i = 0; i < _board.length; i++) {
 			for (int j = 0; j < _board[i].length; j++) {
 				if (_board[i][j] == m) {
+					// CRITIQUE : Faire un Math.pow(2, i) pour calculer une puissance de 2 entière ? Tu as séché le cours sur les opérateurs binaires (1 << i) ? C'est d'une lenteur dramatique.
 					if (m == Mark.B) {
-						advanceScore += (int) Math.pow(2, i);
+						advanceScore += (1 << i);
 					} else {
-						advanceScore += (int) Math.pow(2, -(i - 7));
+						advanceScore += (1 << (7 - i));
 					}
 					numPlayer++;
 
@@ -236,7 +241,8 @@ class Board implements Cloneable {
 								(_board[behindRow][j] == m));
 
 						if (!hasBreakthroughAlly) {
-							dangerScore -= 2 * Math.pow(2, advance);
+							// CRITIQUE : Encore un Math.pow pour une puissance de 2 ? Décidément, le concept de décalage de bits (1 << advance) t'est totalement étranger.
+							dangerScore -= (1 << (advance + 1));
 						}
 					}
 				} else if (_board[i][j] != Mark.EMPTY) {

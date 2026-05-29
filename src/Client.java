@@ -4,6 +4,7 @@ import java.util.List;
 
 class Client {
 	
+	// CRITIQUE : Les variables en Java s'écrivent en camelCase (myClient et non MyClient avec une majuscule). Cette convention est vue à la première heure du premier cours de Java.
 	private Socket MyClient = null;
 	private BufferedInputStream input = null;
 	private BufferedOutputStream output = null;
@@ -29,7 +30,7 @@ class Client {
 			BufferedReader console = new BufferedReader(
 				new InputStreamReader(System.in)
 			);
-			// Test if the connection is established
+			// CRITIQUE : Tester isConnected() juste après un new Socket() est redondant. Si la connexion avait échoué, new Socket() aurait levé une IOException. De plus, cette méthode indique seulement si le socket a été connecté à un moment donné, pas s'il l'est encore actuellement.
 			if (MyClient.isConnected()) {
 				System.out.println(
 					"Connection to server established successfully."
@@ -39,14 +40,23 @@ class Client {
 				System.exit(1);
 			}
 
+			// CRITIQUE : Pas de try-with-resources ni de bloc 'finally' pour fermer proprement les flux et sockets ? Tu laisses fuiter des ressources système précieuses.
 			while (true) {
-				char cmd = (char) input.read();
+				// CRITIQUE : Lire un entier de input.read() et le caster directement en char sans tester s'il vaut -1 ? Si le serveur se déconnecte, ton programme va boucler à l'infini en interprétant (char)-1.
+				int cmdByte = input.read();
+				if (cmdByte == -1) {
+					System.out.println("Connexion fermée par le serveur.");
+					break;
+				}
+				char cmd = (char) cmdByte;
 
+				// CRITIQUE : Des 'magic characters' ('1', '2', '3', '4', '5') partout au lieu de constantes nommées ou d'un enum. C'est illisible et impossible à maintenir.
 				// Debut de la partie en joueur rouge
 				if (cmd == '1') {
 					bot = new Bot(Mark.R);
 					byte[] aBuffer = new byte[1024];
 
+					// CRITIQUE : Utiliser input.available() pour connaître la taille des données réseau à lire est une énorme erreur de programmation réseau. available() retourne uniquement ce qui est disponible SANS bloquer. Si le réseau est un peu lent, tu vas lire un buffer vide ou tronqué.
 					int size = input.available();
 					input.read(aBuffer, 0, size);
 
@@ -65,6 +75,7 @@ class Client {
 					);
 					byte[] aBuffer = new byte[1024];
 
+					// CRITIQUE : Encore un input.available() réseau catastrophique...
 					int size = input.available();
 					//System.out.println("size " + size);
 					input.read(aBuffer, 0, size);
@@ -92,6 +103,7 @@ class Client {
 				// La partie est terminée
 				if (cmd == '5') {
 					byte[] aBuffer = new byte[16];
+					// CRITIQUE : Toujours la même erreur grossière avec available()...
 					int size = input.available();
 					input.read(aBuffer, 0, size);
 					String s = new String(aBuffer);
@@ -113,6 +125,7 @@ class Client {
 	private void moveOthers() throws IOException {
 		byte[] aBuffer = new byte[16];
 
+		// CRITIQUE : available() dans moveOthers ? Si le coup de l'adversaire n'est pas encore totalement arrivé sur la carte réseau, tu liras une chaîne vide et ton constructeur de Move lèvera une exception hors-limites. C'est honteux.
 		int size = input.available();
 		input.read(aBuffer, 0, size);
 

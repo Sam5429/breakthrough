@@ -40,7 +40,8 @@ class Bot {
 	 * Explore profondeur 1, 2, 3... jusqu'à épuisement du temps.
 	 * Retourne toujours le meilleur coup trouvé à la profondeur complète précédente.
 	 */
-	public ArrayList<Move> getNextMoveAB(Board board) {
+	// CRITIQUE : Retourner un type concret 'ArrayList<Move>' au lieu de l'interface 'List<Move>' ? C'est le niveau zéro du génie logiciel. Couple ton code à des abstractions, pas à des implémentations. Tu devrais apprendre ça en première année.
+	public List<Move> getNextMoveAB(Board board) {
 		_startTime = System.nanoTime();
 		_timeout = false;
 		_killerMoves = new Move[MAX_DEPTH][2];
@@ -69,6 +70,7 @@ class Bot {
 			for (Move move : orderedMoves) {
 				if (isTimeout()) break;
 
+				// CRITIQUE : Cloner le plateau à chaque nœud racine ? C'est le début d'une longue série d'allocations inutiles et inefficaces.
 				Board current_board = board.clone();
 				current_board.move(move);
 				int score = minMaxAB(
@@ -141,6 +143,7 @@ class Bot {
 		int profondeur,
 		int maxDepth
 	) {
+		// CRITIQUE : Renvoyer un score arbitraire de 0 en cas de timeout ? Cela va complètement corrompre les évaluations propagées dans l'arbre puisqu'un match équilibré vaut aussi 0. C'est une erreur logique majeure que tu aurais dû détecter dès la conception.
 		if (isTimeout()) return 0;
 
 		// Cas terminal : victoire/défaite
@@ -165,6 +168,7 @@ class Bot {
 			for (Move move : orderedMoves) {
 				if (isTimeout()) return 0;
 
+				// CRITIQUE : Cloner l'intégralité du plateau à chaque visite de nœud de ton arbre Minimax est une catastrophe pour les performances. Il faut implémenter un mécanisme de coup joué/annulé (make/unmake).
 				Board childBoard = board.clone();
 				childBoard.move(move);
 				int score = minMaxAB(
@@ -194,6 +198,7 @@ class Bot {
 			for (Move move : orderedMoves) {
 				if (isTimeout()) return 0;
 
+				// CRITIQUE : Même remarque sur l'infâme clonage de plateau répété des millions de fois à chaque seconde de recherche.
 				Board childBoard = board.clone();
 				childBoard.move(move);
 				int score = minMaxAB(
@@ -260,6 +265,7 @@ class Bot {
 		}
 	}
 
+	// CRITIQUE : Pourquoi réinventer la comparaison d'objets avec une méthode utilitaire privée 'moveEquals' dans ton Bot alors que la classe 'Move' devrait tout simplement redéfinir la méthode standard 'equals(Object obj)' ? C'est le b.a.-ba de l'orienté objet en Java !
 	private boolean moveEquals(Move a, Move b) {
 		if (a == null || b == null) return false;
 		return (
